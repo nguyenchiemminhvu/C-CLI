@@ -1,0 +1,87 @@
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+
+delegate void DEventVoid();
+delegate void DEventInt(int);
+
+public ref class EventSource
+{
+public:
+	EventSource()
+	{
+	}
+
+	~EventSource()
+	{
+	}
+
+	DEventVoid ^__pVoid;
+	event DEventVoid ^__evVoid
+	{
+		void add(DEventVoid ^del)
+		{
+			__pVoid = static_cast<DEventVoid^>(Delegate::Combine(__pVoid, del));
+		}
+		void remove(DEventVoid ^del)
+		{
+			__pVoid = static_cast<DEventVoid^>(Delegate::Remove(__pVoid, del));
+		}
+		void raise()
+		{
+			if (__pVoid)
+				__pVoid->Invoke();
+		}
+	}
+
+	DEventInt ^__pInt;
+	event DEventInt ^__evInt
+	{
+		void add(DEventInt ^del)
+		{
+			__pInt = static_cast<DEventInt^>(Delegate::Combine(__pInt, del));
+		}
+		void remove(DEventInt ^del)
+		{
+			__pInt = static_cast<DEventInt^>(Delegate::Remove(__pInt, del));
+		}
+		void raise(int param)
+		{
+			if (__pInt)
+				__pInt->Invoke(param);
+		}
+	}
+};
+
+public ref class EventReceiver
+{
+public:
+	
+	void Handle()
+	{
+		Console::WriteLine("Reveive unknown param");
+	}
+
+	void Handle(int param)
+	{
+		Console::WriteLine("Receive signal {0}", param);
+	}
+};
+
+int main()
+{
+	EventSource ^__eSrc = gcnew EventSource();
+	EventReceiver ^__eRec = gcnew EventReceiver();
+
+	__eSrc->__pVoid += gcnew DEventVoid(__eRec, &EventReceiver::Handle);
+	__eSrc->__pInt += gcnew DEventInt(__eRec, &EventReceiver::Handle);
+
+	__eSrc->__pVoid();
+	__eSrc->__pInt(10);
+
+	__eSrc->__pVoid -= gcnew DEventVoid(__eRec, &EventReceiver::Handle);
+	__eSrc->__pInt -= gcnew DEventInt(__eRec, &EventReceiver::Handle);
+
+	return 0;
+}

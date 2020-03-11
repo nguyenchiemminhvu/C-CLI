@@ -1,0 +1,70 @@
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+
+delegate void MyDel(int);
+
+interface class IEvent
+{
+public:
+	virtual event MyDel ^__ev;
+	virtual void raise(int);
+};
+
+public ref class EventSource : public IEvent
+{
+public:
+	EventSource()
+	{
+		__dels = gcnew List<MyDel^>;
+	}
+
+	~EventSource()
+	{
+		release();
+	}
+
+	virtual event MyDel ^__ev;
+	virtual void raise(int param)
+	{
+		__ev(param);
+	}
+
+	void bind(MyDel ^del)
+	{
+		__ev += del;
+		__dels->Add(del);
+	}
+
+	void release()
+	{
+		for each (MyDel ^del in __dels)
+		{
+			__ev -= del;
+		}
+		__dels->Clear();
+	}
+
+private:
+	List<MyDel^>^ __dels;
+};
+
+public ref class EventReceiver
+{
+public:
+	void Handle(int param)
+	{
+		Console::WriteLine("Receive signal {0}", param);
+	}
+};
+
+int main()
+{
+	EventSource ^__eSrc = gcnew EventSource();
+	__eSrc->bind(gcnew MyDel(gcnew EventReceiver(), &EventReceiver::Handle));
+	__eSrc->raise(10);
+	__eSrc->release();
+
+	return 0;
+}
