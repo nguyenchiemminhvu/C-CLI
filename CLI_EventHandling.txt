@@ -11,11 +11,23 @@ public enum class EventType
 	EV_KEY_DOWN
 };
 
-public ref class CEvent
+public interface class IMouseEvent
 {
 public:
-	event OnClickEvent ^__onClick;
-	event OnKeyDownEvent ^__onKeyDown;
+	virtual event OnClickEvent ^__onClick;
+};
+
+public interface class IKeyboardEvent
+{
+public:
+	virtual event OnKeyDownEvent ^__onKeyDown;
+};
+
+public ref class CEvent : public IMouseEvent, IKeyboardEvent
+{
+public:
+	virtual event OnClickEvent ^__onClick;
+	virtual event OnKeyDownEvent ^__onKeyDown;
 
 	void Raise(EventType type, array<Int32> ^params, int nParam)
 	{
