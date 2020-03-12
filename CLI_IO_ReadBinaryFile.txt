@@ -1,0 +1,32 @@
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+
+int main()
+{
+	FileStream ^fs = gcnew FileStream("./IO/testIO.txt", FileMode::Open);
+	try
+	{
+		BinaryReader ^br = gcnew BinaryReader(fs);
+
+		while (br->BaseStream->Position < br->BaseStream->Length)
+		{
+			Console::Write(br->ReadChar());
+		}
+	}
+	catch (Exception ^e)
+	{
+		if (dynamic_cast<FileNotFoundException^>(e))
+			Console::WriteLine("File '{0}' not found", "testIO.txt");
+		else
+			Console::WriteLine("Exception: ({0})", e);
+		return -1;
+	}
+	finally
+	{
+		fs->Close();
+	}
+
+	return 0;
+}

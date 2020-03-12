@@ -1,0 +1,32 @@
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+
+int main()
+{
+	try
+	{
+		StreamReader ^sr = File::OpenText("./IO/testIO.txt");
+		
+		String ^str;
+		while ((str = sr->ReadLine()) != nullptr)
+		{
+			Console::WriteLine(str);
+		}
+	}
+	catch (Exception ^e)
+	{
+		if (dynamic_cast<FileNotFoundException^>(e))
+			Console::WriteLine("File '{0}' not found", "testIO.txt");
+		else
+			Console::WriteLine("Exception: ({0})", e);
+		return -1;
+	}
+	finally
+	{
+		
+	}
+
+	return 0;
+}

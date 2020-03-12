@@ -1,0 +1,46 @@
+#using <system.dll>
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+using namespace System::Threading;
+
+public ref class FileEventHandler
+{
+public:
+	void OnChanged(Object ^src, FileSystemEventArgs ^e)
+	{
+		Console::WriteLine("File: {0} {1}", e->FullPath, e->ChangeType);
+	}
+
+	void OnRename(Object ^src, RenamedEventArgs ^e)
+	{
+		Console::WriteLine("File: {0}", e->FullPath);
+	}
+};
+
+int main()
+{
+	FileSystemWatcher ^fWatcher = gcnew FileSystemWatcher("./IO/");
+	fWatcher->NotifyFilter = static_cast<NotifyFilters>(
+										NotifyFilters::FileName |
+										NotifyFilters::Attributes |
+										NotifyFilters::LastWrite |
+										NotifyFilters::LastAccess
+							);
+	
+	FileEventHandler ^__fileHandler = gcnew FileEventHandler();
+	fWatcher->Renamed += gcnew RenamedEventHandler(__fileHandler, &FileEventHandler::OnRename);
+	fWatcher->Changed += gcnew FileSystemEventHandler(__fileHandler, &FileEventHandler::OnChanged);
+	fWatcher->Created += gcnew FileSystemEventHandler(__fileHandler, &FileEventHandler::OnChanged);
+	fWatcher->Deleted += gcnew FileSystemEventHandler(__fileHandler, &FileEventHandler::OnChanged);
+	fWatcher->EnableRaisingEvents = true;
+
+	while (true)
+	{
+		Thread::Sleep(1000);
+	}
+
+	return 0;
+}

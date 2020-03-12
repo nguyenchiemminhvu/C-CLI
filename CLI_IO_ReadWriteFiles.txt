@@ -1,0 +1,80 @@
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+
+String^ getTextFile(String ^path)
+{
+	String ^str;
+
+	try
+	{
+		StreamReader ^sr = File::OpenText(path);
+		str = sr->ReadToEnd();
+		sr->Close();
+	}
+	catch (Exception ^e)
+	{
+		if (dynamic_cast<FileNotFoundException^>(e))
+			Console::WriteLine("File not found");
+		else
+			Console::WriteLine("Exception: ({0})", e);
+		return "";
+	}
+
+	return str;
+}
+
+String^ getBinFile(String ^path)
+{
+	String ^str;
+
+	try
+	{
+		BinaryReader ^br = gcnew BinaryReader(File::Open(path, FileMode::Open));
+		while (br->BaseStream->Position < br->BaseStream->Length)
+		{
+			str += br->ReadChar();
+		}
+		br->Close();
+	}
+	catch (Exception ^e)
+	{
+		if (dynamic_cast<FileNotFoundException^>(e))
+			Console::WriteLine("File not found");
+		else
+			Console::WriteLine("Exception: ({0})", e);
+		return "";
+	}
+
+	return str;
+}
+
+void writeTextFile(String ^path)
+{
+	StreamWriter ^sw = gcnew StreamWriter(File::Open(path, FileMode::OpenOrCreate));
+	sw->WriteLine("nguyenchiemminhvu@gmail.com");
+	sw->WriteLine("vu-ncm@if-vietnam.com");
+
+	sw->Close();
+}
+
+void writeBinaryFile(String ^path)
+{
+	BinaryWriter ^bw = gcnew BinaryWriter(File::Open(path, FileMode::OpenOrCreate));
+	bw->Write("vu-ncm@if-vietnam.com\n");
+	bw->Write("0934359954\n");
+
+	bw->Close();
+}
+
+int main()
+{
+	writeTextFile("./IO/testWriteFile.txt");
+	Console::Write(getTextFile("./IO/testWriteFile.txt"));
+
+	writeBinaryFile("./IO/testWriteBinFile.txt");
+	Console::Write(getBinFile("./IO/testWriteBinFile.txt"));
+
+	return 0;
+}
