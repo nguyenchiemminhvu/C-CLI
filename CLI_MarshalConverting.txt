@@ -1,0 +1,41 @@
+#using <system.dll>
+#include <stdio.h>
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+using namespace System::Threading;
+using namespace System::Windows;
+using namespace System::Windows::Forms;
+using namespace System::Runtime;
+using namespace System::Runtime::InteropServices;
+using namespace Microsoft;
+using namespace Microsoft::Win32;
+
+#define DEBUG_OUT Console::WriteLine
+
+#pragma managed(push, off)
+void UnmanagedPrintf(const char *s)
+{
+	printf_s("%s\n", s);
+}
+#pragma managed(pop)
+
+void ManagedPrintf(char *s)
+{
+	String ^ms = Marshal::PtrToStringAnsi(static_cast<IntPtr>(s));
+	DEBUG_OUT(ms);
+}
+
+[STAThread] int main()
+{
+	IntPtr ip = Marshal::StringToHGlobalAnsi(gcnew String("sample String"));
+	char *s = static_cast<char*>(ip.ToPointer());
+	UnmanagedPrintf(s);
+	Marshal::FreeHGlobal(ip);
+
+	ManagedPrintf("sample String 2");
+
+	return 0;
+}

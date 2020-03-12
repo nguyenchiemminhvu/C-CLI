@@ -1,0 +1,34 @@
+#using <system.dll>
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+using namespace System::Threading;
+using namespace System::Windows;
+using namespace System::Windows::Forms;
+using namespace Microsoft;
+using namespace Microsoft::Win32;
+
+#define DEBUG_OUT Console::WriteLine
+
+#pragma unmanaged
+void unmanagedFunc1()
+{
+	
+}
+#pragma managed
+
+#pragma managed(push, off)
+void unmangedFunc2()
+{
+
+}
+#pragma managed(pop)
+
+[STAThread] int main()
+{
+	
+
+	return 0;
+}
