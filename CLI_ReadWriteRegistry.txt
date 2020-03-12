@@ -1,0 +1,54 @@
+#using <system.dll>
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+using namespace System::Threading;
+using namespace System::Windows;
+using namespace System::Windows::Forms;
+using namespace Microsoft;
+using namespace Microsoft::Win32;
+
+#define DEBUG_OUT Console::WriteLine
+
+Object^ getRegistryValue(RegistryKey ^parent, String ^keyPath, String ^keyName)
+{
+	Object ^res;
+
+	array<wchar_t> ^delimiter = { '/' };
+	RegistryKey ^subkey = parent;
+	array<String^> ^path = keyPath->Split(delimiter);
+	
+	for (int i = 0; i < path->Length; i++)
+	{
+		subkey = subkey->OpenSubKey(path[i]);
+	}
+
+	res = subkey->GetValue(keyName);
+
+	return res;
+}
+
+void setRegistryValue(RegistryKey ^parent, String ^keyPath, String ^keyName, Object ^value)
+{
+	array<wchar_t> ^delimiter = { '/' };
+	RegistryKey ^subkey = parent;
+	array<String^> ^path = keyPath->Split(delimiter);
+	
+	for (int i = 0; i < path->Length; i++)
+	{
+		subkey = subkey->OpenSubKey(path[i], true);
+	}
+	
+	subkey->SetValue(keyName, value);
+}
+
+[STAThread] int main()
+{
+	setRegistryValue(Registry::CurrentUser, "Software/Oracle", "Test", "nguyenchiemminhvu");
+	Object ^obj = getRegistryValue(Registry::CurrentUser, "Software/Oracle", "Test");
+	DEBUG_OUT(static_cast<String^>(obj));
+
+	return 0;
+}
