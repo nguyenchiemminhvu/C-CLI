@@ -1,0 +1,71 @@
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+
+delegate void OnClickEvent(int, int);
+delegate void OnKeyDownEvent(char k);
+
+public enum class EventType
+{
+	EV_CLICK,
+	EV_KEY_DOWN
+};
+
+public ref class CEvent
+{
+public:
+	event OnClickEvent ^__onClick;
+	event OnKeyDownEvent ^__onKeyDown;
+
+	void Raise(EventType type, array<Int32> ^params, int nParam)
+	{
+		switch (type)
+		{
+		case EventType::EV_CLICK:
+			__onClick(params[0], params[1]);
+			break;
+		case EventType::EV_KEY_DOWN:
+			__onKeyDown(params[0]);
+			break;
+		}
+	}
+};
+
+public ref class CEventHandler
+{
+public:
+	void OnClick(int x, int y)
+	{
+		Console::WriteLine("Clicked at position ({0}, {1})", x, y);
+	}
+
+	void OnKeyDown(char keyCode)
+	{
+		Console::WriteLine("Pressed on key " + keyCode);
+	}
+
+	void AddHandler(CEvent ^__ev)
+	{
+		__ev->__onClick += gcnew OnClickEvent(this, &CEventHandler::OnClick);
+		__ev->__onKeyDown += gcnew OnKeyDownEvent(this, &CEventHandler::OnKeyDown);
+	}
+
+	void RemoveHandler(CEvent ^__ev)
+	{
+		__ev->__onClick -= gcnew OnClickEvent(this, &CEventHandler::OnClick);
+		__ev->__onKeyDown -= gcnew OnKeyDownEvent(this, &CEventHandler::OnKeyDown);
+	}
+};
+
+int main()
+{
+	CEvent ^__ev = gcnew CEvent();
+	CEventHandler ^__handler = gcnew CEventHandler();
+
+	__handler->AddHandler(__ev);
+	__ev->Raise(EventType::EV_CLICK, gcnew array<Int32>(2){200, 400}, 2);
+	__ev->Raise(EventType::EV_KEY_DOWN, gcnew array<Int32>(1){'K'}, 1);
+	__handler->RemoveHandler(__ev);
+
+	return 0;
+}
