@@ -1,0 +1,95 @@
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+
+delegate void DEventVoid();
+delegate void DEventInt(int);
+
+public ref class CEvent
+{
+	DEventInt ^__eInt;
+	DEventVoid ^__eVoid;
+
+public:
+	CEvent()
+	{
+		__eVoid = nullptr;
+		__eInt = nullptr;
+	}
+
+	~CEvent()
+	{
+		
+	}
+
+	void Raise()
+	{
+		if (__eVoid)
+			__eVoid();
+	}
+
+	void Raise(int param)
+	{
+		if (__eInt)
+			__eInt(param);
+	}
+	
+	event DEventInt ^CEventInt
+	{
+	public:
+		void add(DEventInt ^dInt)
+		{
+			__eInt += dInt;
+		}
+	private:
+		void remove(DEventInt ^dInt)
+		{
+			__eInt -= dInt;
+		}
+		void raise(int param)
+		{
+			__eInt->Invoke(param);
+		}
+	}
+
+	event DEventVoid ^CEventVoid
+	{
+	public:
+		void add(DEventVoid ^dVoid)
+		{
+			__eVoid = static_cast<DEventVoid^>(Delegate::Combine(__eVoid, dVoid));
+		}
+	private:
+		void remove(DEventVoid ^dVoid)
+		{
+			__eVoid = static_cast<DEventVoid^>(Delegate::Remove(__eVoid, dVoid));
+		}
+		void raise()
+		{
+			__eVoid->Invoke();
+		}
+	}
+
+	void Handler()
+	{
+		Console::WriteLine("An event is raised up ___________ DEventVoid");
+	}
+
+	void Handler(int param)
+	{
+		Console::WriteLine("An event is raised up ____________ DEventInt ({0})", param);
+	}
+};
+
+int main()
+{
+	CEvent ^__ev = gcnew CEvent();
+	__ev->CEventVoid += gcnew DEventVoid(__ev, &CEvent::Handler);
+	__ev->CEventInt += gcnew DEventInt(__ev, &CEvent::Handler);
+
+	__ev->Raise();
+	__ev->Raise(1000);
+
+	return 0;
+}

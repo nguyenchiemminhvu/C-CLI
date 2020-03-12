@@ -1,0 +1,41 @@
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+
+public class CEvent
+{
+public:
+	__event void Event(int param);
+};
+
+public class CEventHandler
+{
+public:
+	void hook(CEvent *ev)
+	{
+		__hook(&CEvent::Event, ev, &CEventHandler::Handler);
+	}
+
+	void unhook(CEvent *ev)
+	{
+		__unhook(&CEvent::Event, ev, &CEventHandler::Handler);
+	}
+
+	void Handler(int param)
+	{
+		Console::WriteLine("Receive an event with param {0}", param);
+	}
+};
+
+int main()
+{
+	CEvent __ev;
+	CEventHandler __handler;
+
+	__handler.hook(&__ev);
+	__raise __ev.Event(1000);
+	__handler.unhook(&__ev);
+
+	return 0;
+}
