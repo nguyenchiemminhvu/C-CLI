@@ -3,6 +3,8 @@ using namespace System::Runtime::InteropServices;
 
 #define DEBUG_OUT Console::WriteLine
 
+/////////////////////////////////////////////////////////////
+
 ref struct MyPInvokeWrap {
 public:
 	enum class SystemMetricIndex {
@@ -18,8 +20,12 @@ public:
 	static void print_line([MarshalAs(UnmanagedType::LPStr)]String^);
 };
 
+////////////////////////////////////////////////////////////
+
 [DllImport("NCMVDLL")]
 extern "C" int ConvertStringToInt(const char *s);
+
+//////////////////////////////////////////////////////
 
 [StructLayout(LayoutKind::Sequential, Pack=8)]
 value struct Position
@@ -31,21 +37,87 @@ value struct Position
 [DllImport("NCMVDLL")]
 extern "C" double CalDistance(Position a, Position b);
 
+//////////////////////////////////////////////////////////////////
+
+[DllImport("NCMVDLL")]
+extern "C" void reverseArray([MarshalAs(UnmanagedType::LPArray)]array<int>^, int);
+
+/////////////////////////////////////////////////////////////////
+
+public delegate int __MCALLBACK(void);
+[DllImport("NCMVDLL")]
+extern "C" int testFuncPointer([MarshalAs(UnmanagedType::FunctionPtr)]__MCALLBACK ^);
+
+int GetID()
+{
+	static int SN = 0;
+	return SN++;
+}
+
+///////////////////////////////////////////////////////////////////
+
+[StructLayout(LayoutKind::Sequential, Pack=8)]
+value struct MStudent
+{
+	int ID;
+	IntPtr scores;
+};
+
+[DllImport("NCMVDLL")]
+extern "C" void showScores(MStudent);
+
+////////////////////////////////////////////////////////////////////
+
 [STAThread] int main()
 {
+	/////////////////////////////////////////////////////////////
 	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CXSCREEN));
 	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CYSCREEN));
 	
+	///////////////////////////////////////////////
 	MyPInvokeWrap::print_line("NCMV TEST");
 	
+	//////////////////////////////////////////
 	int n = ConvertStringToInt("12345");
 	DEBUG_OUT(n);
 	
+	///////////////////////////////////////////
 	Position a, b;
 	a.x = 0, a.y = 0;
 	b.x = 1, b.y = 1;
 	double d = CalDistance(a, b);
 	DEBUG_OUT(d);
-	
+
+	////////////////////////////////////////////////
+	array<int> ^arr = gcnew array<int>(10);
+	for (int i = 0; i < 10; i++)
+		arr[i] = i+1;
+	reverseArray(arr, 10);
+	for (int i = 0; i < 10; i++)
+		Console::Write(arr[i] + " ");
+	DEBUG_OUT();
+
+	///////////////////////////////////////////////////////
+	__MCALLBACK ^callback = gcnew __MCALLBACK(GetID);
+	for (int i = 0; i < 10; i++)
+		Console::Write(testFuncPointer(callback) + " ");
+	DEBUG_OUT();
+
+	//////////////////////////////////////////////////////////
+	array<float> ^scores = gcnew array<float>(10);
+	for (int i = 0; i < 10; i++)
+	{
+		scores[i] = (float)(i * 3);
+	}
+	MStudent st;
+	st.ID = testFuncPointer(callback);
+	st.scores = Marshal::AllocCoTaskMem(10 * Marshal::SizeOf(float::typeid));
+	for (int i = 0; i < 10; i++)
+	{
+		IntPtr ip = IntPtr(st.scores.ToInt32() + i * Marshal::SizeOf(float::typeid));
+		Marshal::StructureToPtr(scores[i], ip, false);
+	}
+	showScores(st);
+
 	return 0;
 }
