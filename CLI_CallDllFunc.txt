@@ -5,29 +5,6 @@ using namespace System::Runtime::InteropServices;
 
 ref struct MyPInvokeWrap {
 public:
-   [ DllImport("user32", CharSet = CharSet::Ansi) ]
-   static String^ CharLower([In, Out] String ^);
-};
-
-[STAThread] int main()
-{
-	String ^ strout = "AabCc";
-	Console::WriteLine(strout);
-	strout = MyPInvokeWrap::CharLower(strout);
-	DEBUG_OUT(strout);
-
-	return 0;
-}
-
-================================
-
-using namespace System;
-using namespace System::Runtime::InteropServices;
-
-#define DEBUG_OUT Console::WriteLine
-
-ref struct MyPInvokeWrap {
-public:
 	enum class SystemMetricIndex {
 		// Same values as those defined in winuser.h.
 		SM_CXSCREEN = 0,
@@ -38,11 +15,21 @@ public:
 	static int GetSystemMetrics(int);
 
 	[DllImport("NCMVDLL")]
-	static void print_line(const char *s);
+	static void print_line([MarshalAs(UnmanagedType::LPStr)]String^);
 };
 
 [DllImport("NCMVDLL")]
 extern "C" int ConvertStringToInt(const char *s);
+
+[StructLayout(LayoutKind::Sequential, Pack=8)]
+value struct Position
+{
+	int x;
+	int y;
+};
+
+[DllImport("NCMVDLL")]
+extern "C" double CalDistance(Position a, Position b);
 
 [STAThread] int main()
 {
@@ -53,6 +40,12 @@ extern "C" int ConvertStringToInt(const char *s);
 	
 	int n = ConvertStringToInt("12345");
 	DEBUG_OUT(n);
+	
+	Position a, b;
+	a.x = 0, a.y = 0;
+	b.x = 1, b.y = 1;
+	double d = CalDistance(a, b);
+	DEBUG_OUT(d);
 	
 	return 0;
 }
