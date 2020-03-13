@@ -1,0 +1,64 @@
+// Create C# project and build as dll
+
+using System;
+
+public class ArrayWraper
+{
+    private int[] __array = new int[100];
+    public int this[int __idx]
+    {
+        get
+        {
+            if (__idx >= 0 && __idx < 100)
+                return __array[__idx];
+            return -1;
+        }
+        set
+        {
+            if (__idx >= 0 && __idx < 100)
+            {
+                __array[__idx] = value;
+            }
+        }
+    }
+}
+
+=================================================
+
+// Call in C++ CLI project
+
+#include <stdio.h>
+#include <iostream>
+#include <comdef.h>
+#include <gcroot.h>
+
+using namespace System;
+using namespace System::Collections;
+using namespace System::Collections::Generic;
+using namespace System::IO;
+using namespace System::Threading;
+using namespace System::Windows;
+using namespace System::Windows::Forms;
+using namespace System::Runtime;
+using namespace System::Runtime::InteropServices;
+using namespace System::Data;
+using namespace Microsoft;
+using namespace Microsoft::Win32;
+
+#define DEBUG_OUT Console::WriteLine
+
+[STAThread] int main()
+{
+	ArrayWraper ^__arr = gcnew ArrayWraper();
+	for (int i = 0; i < 100; i++)
+	{
+		__arr[i] = i * 2;
+	}
+
+	for (int i = 0; i < 100; i++)
+	{
+		DEBUG_OUT(__arr[i]);
+	}
+
+	return 0;
+}

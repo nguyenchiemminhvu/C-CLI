@@ -1,0 +1,46 @@
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
+#define DEBUG_OUT Console::WriteLine
+
+ref struct MyPInvokeWrap {
+public:
+   [ DllImport("user32", CharSet = CharSet::Ansi) ]
+   static String^ CharLower([In, Out] String ^);
+};
+
+[STAThread] int main()
+{
+	String ^ strout = "AabCc";
+	Console::WriteLine(strout);
+	strout = MyPInvokeWrap::CharLower(strout);
+	DEBUG_OUT(strout);
+
+	return 0;
+}
+
+================================
+
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
+#define DEBUG_OUT Console::WriteLine
+
+ref struct MyPInvokeWrap {
+public:
+	enum class SystemMetricIndex {
+		// Same values as those defined in winuser.h.
+		SM_CXSCREEN = 0,
+		SM_CYSCREEN = 1
+	};
+	
+	[DllImport("user32")]
+	static int GetSystemMetrics(int);
+};
+
+[STAThread] int main()
+{
+	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CXSCREEN));
+	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CYSCREEN));
+	return 0;
+}
