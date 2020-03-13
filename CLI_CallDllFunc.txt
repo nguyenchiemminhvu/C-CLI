@@ -104,20 +104,16 @@ extern "C" void showScores(MStudent);
 	DEBUG_OUT();
 
 	//////////////////////////////////////////////////////////
-	array<float> ^scores = gcnew array<float>(10);
-	for (int i = 0; i < 10; i++)
-	{
-		scores[i] = (float)(i * 3);
-	}
 	MStudent st;
 	st.ID = testFuncPointer(callback);
 	st.scores = Marshal::AllocCoTaskMem(10 * Marshal::SizeOf(float::typeid));
 	for (int i = 0; i < 10; i++)
 	{
 		IntPtr ip = IntPtr(st.scores.ToInt32() + i * Marshal::SizeOf(float::typeid));
-		Marshal::StructureToPtr(scores[i], ip, false);
+		Marshal::StructureToPtr((float)i * 3, ip, false);
 	}
 	showScores(st);
+	Marshal::FreeCoTaskMem(st.scores);
 
 	return 0;
 }
