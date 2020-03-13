@@ -36,11 +36,23 @@ public:
 	
 	[DllImport("user32")]
 	static int GetSystemMetrics(int);
+
+	[DllImport("NCMVDLL")]
+	static void print_line(const char *s);
 };
+
+[DllImport("NCMVDLL")]
+extern "C" int ConvertStringToInt(const char *s);
 
 [STAThread] int main()
 {
 	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CXSCREEN));
 	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CYSCREEN));
+	
+	MyPInvokeWrap::print_line("NCMV TEST");
+	
+	int n = ConvertStringToInt("12345");
+	DEBUG_OUT(n);
+	
 	return 0;
 }
