@@ -94,10 +94,25 @@ void ManagedPrintf(wchar_t *s)
 	DEBUG_OUT(ss);
 }
 
+////////////////////////////////////////////////////////////////////
+
+class NativeHoldManaged
+{
+public:
+	gcroot<String ^> str_handle;
+};
+
 ///////////////////////////////////////////////////////////////////
 
 [STAThread] int main()
 {
+	///////////////////////////////////////////////
+#if (_MANAGED == 1) || (_M_CEE == 1)
+	DEBUG_OUT("Compile with /CLR");
+#else
+	DEBUG_OUT("Compile without /CLR");
+#endif
+
 	///////////////////////////////////////////////
 	char *s1 = "NCMV TEST 1";
 	MyPInvokeWrap::print_line(s1);
@@ -125,6 +140,11 @@ void ManagedPrintf(wchar_t *s)
 		Console::Write(*pS5);
 	}
 	DEBUG_OUT();
+
+	/////////////////////////////////////////////////
+	NativeHoldManaged nat;
+	nat.str_handle = gcnew String("NCMV TEST 6");
+	DEBUG_OUT(nat.str_handle);
 
 	/////////////////////////////////////////////////////////////
 	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CXSCREEN));
@@ -167,5 +187,7 @@ void ManagedPrintf(wchar_t *s)
 	}
 	showScores(st);
 
+	///////////////////////////////////////////////////////////
+	
 	return 0;
 }
