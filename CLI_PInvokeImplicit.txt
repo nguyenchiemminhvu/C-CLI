@@ -1,0 +1,171 @@
+#include <vcclr.h>
+
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
+#define DEBUG_OUT Console::WriteLine
+
+/////////////////////////////////////////////////////////////
+
+ref struct MyPInvokeWrap {
+public:
+	enum class SystemMetricIndex {
+		// Same values as those defined in winuser.h.
+		SM_CXSCREEN = 0,
+		SM_CYSCREEN = 1
+	};
+	
+	[DllImport("user32")]
+	static int GetSystemMetrics(int);
+
+	[DllImport("NCMVDLL")]
+	static void print_line(char *s);
+};
+
+////////////////////////////////////////////////////////////
+
+[DllImport("NCMVDLL")]
+extern "C" int ConvertStringToInt(const char *s);
+
+//////////////////////////////////////////////////////
+
+[StructLayout(LayoutKind::Sequential, Pack=8)]
+value struct Position
+{
+	int x;
+	int y;
+};
+
+[DllImport("NCMVDLL")]
+extern "C" double CalDistance(Position a, Position b);
+
+//////////////////////////////////////////////////////////////////
+
+[DllImport("NCMVDLL")]
+extern "C" void reverseArray([MarshalAs(UnmanagedType::LPArray)]array<int>^, int);
+
+/////////////////////////////////////////////////////////////////
+
+public delegate int __MCALLBACK(void);
+[DllImport("NCMVDLL")]
+extern "C" int testFuncPointer([MarshalAs(UnmanagedType::FunctionPtr)]__MCALLBACK ^);
+
+int GetID()
+{
+	static int SN = 0;
+	return SN++;
+}
+
+///////////////////////////////////////////////////////////////////
+
+[StructLayout(LayoutKind::Sequential, CharSet=CharSet::Ansi)]
+ref class Student
+{
+public:
+	[MarshalAsAttribute(UnmanagedType::LPStr)]
+	String ^name;
+	
+	[MarshalAsAttribute(UnmanagedType::ByValArray, ArraySubType=UnmanagedType::I8, SizeConst=10)]
+	array<float> ^scores;
+};
+
+[DllImport("NCMVDLL", CharSet = CharSet::Ansi)]
+void showScores([In][Out]Student ^);
+
+////////////////////////////////////////////////////////////////////
+
+#pragma unmanaged
+[DllImport("msvcrt.dll", CallingConvention = CallingConvention::Cdecl)]
+extern "C" int printf(const char *s, ...);
+void NativePrintf(const char *s)
+{
+	printf("%s\n", s);
+}
+#pragma managed
+
+void ManagedPrintf(String ^s)
+{
+	DEBUG_OUT(s);
+}
+
+void ManagedPrintf(wchar_t *s)
+{
+	String ^ss = Marshal::PtrToStringUni(static_cast<IntPtr>(s));
+	DEBUG_OUT(ss);
+}
+
+///////////////////////////////////////////////////////////////////
+
+[STAThread] int main()
+{
+	///////////////////////////////////////////////
+	char *s1 = "NCMV TEST 1";
+	MyPInvokeWrap::print_line(s1);
+
+	/////////////////////////////////////////////////
+	String ^s2 = gcnew String("NCMV TEST 2");
+	IntPtr ss2 = Marshal::StringToHGlobalAnsi(s2);
+	NativePrintf((char *)ss2.ToPointer());
+	Marshal::FreeHGlobal(ss2);
+	
+	//////////////////////////////////////////////////
+	char *s3 = "NCMV TEST 3";
+	String ^s3Test = Marshal::PtrToStringAnsi(static_cast<IntPtr>(s3));
+	ManagedPrintf(s3Test);
+
+	/////////////////////////////////////////////////
+	wchar_t *s4 = L"NCMV TEST 4";
+	ManagedPrintf(s4);
+
+	/////////////////////////////////////////////////
+	String ^s5 = gcnew String("NCMV TEST 5");
+	interior_ptr<const Char> pS5 = PtrToStringChars(s5);
+	for ( ; *pS5 != '\0'; pS5++)
+	{
+		Console::Write(*pS5);
+	}
+	DEBUG_OUT();
+
+	/////////////////////////////////////////////////////////////
+	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CXSCREEN));
+	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CYSCREEN));
+	
+	//////////////////////////////////////////
+	int n = ConvertStringToInt("12345");
+	DEBUG_OUT(n);
+	
+	///////////////////////////////////////////
+	Position a;
+	Position b;
+	a.x = 0, a.y = 0;
+	b.x = 1, b.y = 1;
+	double d = CalDistance(a, b);
+	DEBUG_OUT(d);
+	
+	////////////////////////////////////////////////
+	array<int> ^arr = gcnew array<int>(10);
+	for (int i = 0; i < 10; i++)
+		arr[i] = i+1;
+	reverseArray(arr, 10);
+	for (int i = 0; i < 10; i++)
+		Console::Write(arr[i] + " ");
+	DEBUG_OUT();
+
+	///////////////////////////////////////////////////////
+	__MCALLBACK ^callback = gcnew __MCALLBACK(GetID);
+	for (int i = 0; i < 10; i++)
+		Console::Write(testFuncPointer(callback) + " ");
+	DEBUG_OUT();
+
+	//////////////////////////////////////////////////////////
+	Student ^st = gcnew Student();
+	st->name = gcnew String("My Student");
+	st->scores = gcnew array<float>(10);
+	for (int i = 0; i < 10; i++)
+	{
+		st->scores[i] = i;
+	}
+	showScores(st);
+
+	return 0;
+}

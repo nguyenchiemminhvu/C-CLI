@@ -17,7 +17,7 @@ public:
 	static int GetSystemMetrics(int);
 
 	[DllImport("NCMVDLL")]
-	static void print_line([MarshalAs(UnmanagedType::LPStr)]String^);
+	static void print_line(char *s);
 };
 
 ////////////////////////////////////////////////////////////
@@ -68,6 +68,22 @@ extern "C" void showScores(MStudent);
 
 ////////////////////////////////////////////////////////////////////
 
+#pragma unmanaged
+[DllImport("msvcrt.dll", CallingConvention = CallingConvention::Cdecl)]
+extern "C" int printf(const char *s, ...);
+void NativePrintf(const char *s)
+{
+	printf("%s\n", s);
+}
+#pragma managed
+
+void ManagedPrintf(String ^s)
+{
+	DEBUG_OUT(s);
+}
+
+///////////////////////////////////////////////////////////////////
+
 [STAThread] int main()
 {
 	/////////////////////////////////////////////////////////////
@@ -75,7 +91,19 @@ extern "C" void showScores(MStudent);
 	DEBUG_OUT(MyPInvokeWrap::GetSystemMetrics((int)MyPInvokeWrap::SystemMetricIndex::SM_CYSCREEN));
 	
 	///////////////////////////////////////////////
-	MyPInvokeWrap::print_line("NCMV TEST");
+	char *s1 = "NCMV TEST";
+	MyPInvokeWrap::print_line(s1);
+
+	/////////////////////////////////////////////////
+	String ^s2 = gcnew String("NCMV TEST 2");
+	IntPtr ss2 = Marshal::StringToHGlobalAnsi(s2);
+	NativePrintf((char *)ss2.ToPointer());
+	Marshal::FreeHGlobal(ss2);
+
+	//////////////////////////////////////////////////
+	char *s3 = "NCMV TEST 3";
+	String ^s3Test = Marshal::PtrToStringAnsi(static_cast<IntPtr>(s3));
+	ManagedPrintf(s3Test);
 	
 	//////////////////////////////////////////
 	int n = ConvertStringToInt("12345");
