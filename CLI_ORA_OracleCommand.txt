@@ -1,0 +1,63 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::Data;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+int main()
+{
+	//Create a connection to Oracle
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=false;";
+
+	OracleConnection ^con = gcnew OracleConnection();
+	con->ConnectionString = gcnew System::String(conString.c_str());
+	try
+	{
+		con->Open();
+		
+		std::string query = "select last_name from employees where employee_id = :employee_id";
+		
+		OracleCommand ^com = gcnew OracleCommand();
+		com->Connection = con;
+		com->CommandText = gcnew String(query.c_str());
+		com->CommandType = CommandType::Text;
+
+		OracleParameter ^emp_id_param = gcnew OracleParameter();
+		emp_id_param->OracleDbType = OracleDbType::Int32;
+		emp_id_param->Value = "100";
+
+		com->Parameters->Add(emp_id_param);
+
+		OracleDataReader ^reader = com->ExecuteReader(CommandBehavior::Default);
+		if (reader->Read())
+		{
+			DEBUG(reader->GetString(0));
+		}
+		reader->Close();
+	}
+	catch (OracleException ^e)
+	{
+		for each (Object ^err in e->Errors)
+		{
+			MessageBox::Show("OracleException: " + ((OracleError^)err)->Message->ToString());
+		}
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show("GeneralException: " + e->Message->ToString());
+	}
+	finally
+	{
+		con->Close();
+	}
+	
+	return 0;
+}
