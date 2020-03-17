@@ -23,15 +23,16 @@ int main()
 	{
 		con->Open();
 		
-		std::string query = "select * from departments";
-		OracleCommand ^com = gcnew OracleCommand();
-		com->Connection = con;
-		com->CommandText = gcnew String(query.c_str());
-		com->CommandType = CommandType::Text;
+		std::string selectQuery = "select * from departments";
+		OracleCommand ^select = gcnew OracleCommand();
+		select->Connection = con;
+		select->CommandText = gcnew String(selectQuery.c_str());
+		select->CommandType = CommandType::Text;
 		
 		DataSet ^ds = gcnew DataSet();
 		
-		OracleDataAdapter ^da = gcnew OracleDataAdapter(com);
+		OracleDataAdapter ^da = gcnew OracleDataAdapter();
+		da->SelectCommand = select;
 		OracleCommandBuilder ^cb = gcnew OracleCommandBuilder(da);
 		da->Fill(ds);
 
@@ -43,6 +44,25 @@ int main()
 			String ^location_id = ds->Tables[0]->Rows[i][3]->ToString();
 			DEBUG(dept_id + "\t\t" + dept_name + "\t\t\t\t" + manager_id + "\t\t" + location_id);
 		}
+		DEBUG("===================================================");
+
+		DataRow ^row = ds->Tables[0]->NewRow();
+		row[0] = 280;
+		row[1] = "NCMV";
+		row[2] = 100;
+		row[3] = 1700;
+		ds->Tables[0]->Rows->Add(row);
+		da->Update(ds->Tables[0]);
+
+		for (int i = 0; i < ds->Tables[0]->Rows->Count; i++)
+		{
+			String ^dept_id = ds->Tables[0]->Rows[i][0]->ToString();
+			String ^dept_name = ds->Tables[0]->Rows[i][1]->ToString();
+			String ^manager_id = ds->Tables[0]->Rows[i]->IsNull(2) ? "NULL" : ds->Tables[0]->Rows[i][2]->ToString();
+			String ^location_id = ds->Tables[0]->Rows[i][3]->ToString();
+			DEBUG(dept_id + "\t\t" + dept_name + "\t\t\t\t" + manager_id + "\t\t" + location_id);
+		}
+		DEBUG("===================================================");
 	}
 	catch (OracleException ^e)
 	{
