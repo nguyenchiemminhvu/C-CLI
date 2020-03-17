@@ -1,0 +1,40 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+int main()
+{
+	//Create a connection to Oracle
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=false;";
+	
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+	try
+	{
+		con->Open();
+		
+		OracleCommand ^com = gcnew OracleCommand("begin HR_PACKAGE_1.DROP_TABLE(:1); end;", con);
+		com->Parameters->Add("TableToDrop", OracleDbType::Varchar2, "TEST", ParameterDirection::Input);
+		com->ExecuteNonQuery();
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		con->Close();
+	}
+	
+	return 0;
+}

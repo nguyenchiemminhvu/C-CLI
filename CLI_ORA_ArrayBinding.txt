@@ -1,0 +1,54 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+int main()
+{
+	//Create a connection to Oracle
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=false;";
+	
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+	OracleTransaction ^tran = nullptr;
+	try
+	{
+		con->Open();
+		tran = con->BeginTransaction();
+
+		OracleCommand ^com = gcnew OracleCommand();
+		com->Connection = con;
+		com->CommandText = gcnew String("begin HR_PACKAGE_1.SEND_BONUS_EMP(999, :1); end;");
+		com->ArrayBindCount = 3;
+		com->Parameters->Add("emp_ids", OracleDbType::Int32, gcnew array<int>(3){100, 101, 102}, ParameterDirection::Input);
+		com->ExecuteNonQuery();
+	}
+	catch (OracleException ^e)
+	{
+		tran->Rollback();
+		MessageBox::Show(e->Message->ToString());
+		if (e->Number == 24381)
+		{
+			for (int i = 0; i < e->Errors->Count; i++)
+			{
+				Console::WriteLine("Array Bind Error {0} occured at Row Number {1}", e->Errors[i]->Message, e->Errors[i]->ArrayBindIndex);
+			}
+		}
+	}
+	finally
+	{
+		tran->Commit();
+		con->Close();
+	}
+	
+	return 0;
+}
