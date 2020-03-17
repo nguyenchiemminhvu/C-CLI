@@ -1,0 +1,86 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::Data;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+public class OracleDatabaseEvents
+{
+public:
+	static FailoverReturnCode onFailover(Object ^sender, OracleFailoverEventArgs ^args)
+	{
+		DEBUG(args->ToString());
+		switch (args->FailoverEvent)
+		{
+		case FailoverEvent::Error:
+			return FailoverReturnCode::Retry;
+		default:
+			break;
+		}
+		return FailoverReturnCode::Success;
+	}
+};
+
+int main()
+{
+	//Create a connection to Oracle
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=false;";
+	OracleConnection ^con = gcnew OracleConnection();
+	con->ConnectionString = gcnew System::String(conString.c_str());
+	try
+	{
+		con->Open();
+		con->Failover += gcnew OracleFailoverEventHandler(&OracleDatabaseEvents::onFailover);
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show("GeneralException: " + e->Message->ToString());
+	}
+
+	bool readyToCommit = false;
+	OracleTransaction ^ts = nullptr;
+	try
+	{
+		ts = con->BeginTransaction();
+		std::string updateQuery = "update employees set salary = 99999 where employee_id=100";
+		OracleCommand ^updateCom = con->CreateCommand();
+		updateCom->CommandText = gcnew String(updateQuery.c_str());
+		if (updateCom->ExecuteNonQuery() != -1)
+		{
+			readyToCommit = true;
+		}
+	}
+	catch (Exception ^e)
+	{
+		if (ts)
+			ts->Rollback();
+		MessageBox::Show("GeneralException: " + e->Message->ToString());
+	}
+
+	try
+	{
+		if (readyToCommit)
+		{
+			ts->Commit();
+			MessageBox::Show("Committed transaction");
+		}
+	}
+	catch (Exception ^e)
+	{
+		
+	}
+	finally
+	{
+		con->Close();
+	}
+	
+	return 0;
+}

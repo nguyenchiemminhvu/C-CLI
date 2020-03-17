@@ -1,0 +1,62 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::Data;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+public class OracleDatabaseEvents
+{
+public:
+	static FailoverReturnCode onFailover(Object ^sender, OracleFailoverEventArgs ^args)
+	{
+		DEBUG(args->ToString());
+		switch (args->FailoverEvent)
+		{
+		case FailoverEvent::Error:
+			return FailoverReturnCode::Retry;
+		default:
+			break;
+		}
+		return FailoverReturnCode::Success;
+	}
+};
+
+int main()
+{
+	//Create a connection to Oracle
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=false;";
+	OracleConnection ^con = gcnew OracleConnection();
+	con->ConnectionString = gcnew System::String(conString.c_str());
+	try
+	{
+		con->Open();
+		con->Failover += gcnew OracleFailoverEventHandler(&OracleDatabaseEvents::onFailover);
+		DEBUG(con->ServerVersion + " " + con->ServiceName);
+		
+	}
+	catch (OracleException ^e)
+	{
+		for each (Object ^err in e->Errors)
+		{
+			MessageBox::Show("OracleException: " + ((OracleError^)err)->Message->ToString());
+		}
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show("GeneralException: " + e->Message->ToString());
+	}
+	finally
+	{
+		con->Close();
+	}
+	
+	return 0;
+}
