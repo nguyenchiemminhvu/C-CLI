@@ -1,0 +1,40 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::IO;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+int main()
+{
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=true;";
+	
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+	try
+	{
+		con->Open();
+		OracleCommand ^cmd = gcnew OracleCommand("secure_dml", con);
+		cmd->CommandType = CommandType::StoredProcedure;
+		cmd->ExecuteNonQuery();
+	}
+	catch (OracleException ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+	
+	return 0;
+}
