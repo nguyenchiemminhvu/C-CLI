@@ -1,0 +1,65 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::IO;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+void testPLSQL(OracleConnection ^%con)
+{
+	try
+	{
+		if (con->State != ConnectionState::Open)
+			con->Open();
+		
+		std::string cmdStr = "	declare \
+								begin \
+								  delete from BONUS \
+								  where Employee_Id between :1 and :2; \
+								end;";
+		OracleCommand ^cmd = gcnew OracleCommand(gcnew String(cmdStr.c_str()), con);
+		cmd->Parameters->Add(":1", OracleDbType::Int32, 150, ParameterDirection::Input);
+		cmd->Parameters->Add(":2", OracleDbType::Int32, 200, ParameterDirection::Input);
+		cmd->ExecuteNonQuery();
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+int main()
+{
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=true;";
+	
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+	try
+	{
+		testPLSQL(con);
+	}
+	catch (OracleException ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+	
+	return 0;
+}
