@@ -14,7 +14,7 @@ using namespace Oracle::DataAccess::Types;
 
 #define DEBUG Console::WriteLine
 
-void uploadBlob(OracleConnection ^%con, String ^imagePath)
+void uploadImage(OracleConnection ^%con, String ^imagePath)
 {
 	int lastSlashIdx = imagePath->LastIndexOf("/");
 	String ^pic_name = imagePath->Substring(lastSlashIdx + 1);
@@ -49,7 +49,7 @@ void uploadBlob(OracleConnection ^%con, String ^imagePath)
 	}
 }
 
-void downloadBlob(OracleConnection ^%con)
+void downloadImages(OracleConnection ^%con)
 {
 	if (con->State != ConnectionState::Open)
 		con->Open();
@@ -97,8 +97,8 @@ int main()
 	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
 	try
 	{
-		uploadBlob(con, "./images/Pic_1.png");
-		downloadBlob(con);
+		uploadImage(con, "./images/Pic_1.png");
+		downloadImages(con);
 	}
 	catch (OracleException ^e)
 	{
