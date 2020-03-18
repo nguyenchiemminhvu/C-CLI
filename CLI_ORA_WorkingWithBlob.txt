@@ -1,0 +1,114 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::IO;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+void uploadBlob(OracleConnection ^%con, String ^imagePath)
+{
+	int lastSlashIdx = imagePath->LastIndexOf("/");
+	String ^pic_name = imagePath->Substring(lastSlashIdx + 1);
+	
+	BinaryReader ^imageReader = gcnew BinaryReader(File::Open(imagePath, FileMode::Open, FileAccess::Read));
+	try
+	{
+		if (con->State != ConnectionState::Open)
+		{
+			con->Open();
+		}
+
+		OracleBlob ^pic_data = gcnew OracleBlob(con);
+		pic_data->Write(imageReader->ReadBytes(imageReader->BaseStream->Length), 0, imageReader->BaseStream->Length);
+
+		std::string cmdStr = "insert into PICTURES values(:1, :2)";
+		OracleCommand ^cmd = gcnew OracleCommand(gcnew String(cmdStr.c_str()), con);
+		cmd->Parameters->Add(":1", OracleDbType::Varchar2, pic_name, ParameterDirection::Input);
+		cmd->Parameters->Add(":2", OracleDbType::Blob, pic_data, ParameterDirection::Input);
+
+		DEBUG("{0} image uploaded", cmd->ExecuteNonQuery());
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		imageReader->Close();
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+void downloadBlob(OracleConnection ^%con)
+{
+	if (con->State != ConnectionState::Open)
+		con->Open();
+	
+	std::string cmdStr = "select * from PICTURES";
+	OracleCommand ^cmd = gcnew OracleCommand(gcnew String(cmdStr.c_str()), con);
+	OracleDataReader ^dataReader = cmd->ExecuteReader();
+
+	FileStream ^fStream = nullptr;
+	try
+	{
+		while (dataReader->Read())
+		{
+			String ^pic_name = dataReader->GetString(dataReader->GetOrdinal("PIC_NAME"));
+			OracleBlob ^pic_data = dataReader->GetOracleBlob(dataReader->GetOrdinal("PICTURE"));
+
+			if (!pic_data->IsNull)
+			{
+				fStream = File::Open("./downloads/" + pic_name, FileMode::OpenOrCreate, FileAccess::Write);
+				array<Byte> ^buffer = gcnew array<Byte>(pic_data->Length);
+				pic_data->Read(buffer, 0, pic_data->Length);
+
+				fStream->Write(buffer, 0, pic_data->Length);
+				DEBUG("File downloaded: {0}", pic_name);
+			}
+		}
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (fStream)
+			fStream->Close();
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+int main()
+{
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=false;";
+	
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+	try
+	{
+		uploadBlob(con, "./images/Pic_1.png");
+		downloadBlob(con);
+	}
+	catch (OracleException ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+	
+	return 0;
+}
