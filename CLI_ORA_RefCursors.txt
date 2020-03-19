@@ -1,0 +1,400 @@
+create or replace PACKAGE HR_PACKAGE_1
+AS
+  
+  cursor c_employees
+    is
+      select *
+      from employees;
+    
+  function getHighestSalary
+  return NUMBER;
+  
+  procedure drop_table
+  (
+    table_name varchar2
+  );
+  
+  procedure send_bonus_dept
+  (
+    for_each_one NUMBER,
+    dept_id NUMBER
+  );
+  
+  procedure send_bonus_emp
+  (
+    for_each_one NUMBER,
+    emp_id NUMBER
+  );
+  
+  TYPE EMP_ID_ARRAY_T is table of NUMBER index by BINARY_INTEGER;
+  procedure send_bonus_emps
+  (
+    for_each_one IN NUMBER,
+    emp_ids IN EMP_ID_ARRAY_T
+  );
+  
+  procedure send_bonus_ref
+  (
+    for_each_one IN NUMBER,
+    emp_cursor IN SYS_REFCURSOR
+  );
+  
+  function get_emp_info_func
+  return sys_refcursor;
+  
+  procedure get_emp_info_proc
+  (
+    p_rc out sys_refcursor
+  );
+
+  procedure get_multiple_cursors
+  (
+    p_rc1 out sys_refcursor, 
+    p_rc2 out sys_refcursor, 
+    p_rc3 out sys_refcursor
+  );
+
+END HR_PACKAGE_1;
+
+====================================================================
+
+create or replace PACKAGE body HR_PACKAGE_1
+AS
+
+  ---------------------------------------------------------------
+
+  function getHighestSalary
+  return NUMBER
+  as
+    n_highest NUMBER;
+  begin
+    select max(salary) into n_highest
+    from employees;
+    return n_highest;
+  end getHighestSalary;
+  
+  ----------------------------------------------------------------
+  
+  procedure drop_table
+  (
+    table_name varchar2
+  )
+  as
+  begin
+    Execute Immediate 'drop table ' || table_name;
+    Exception
+      when others then
+        if sqlcode != -942 then
+          raise;
+        end if;
+  end drop_table;
+  
+  -------------------------------------------------------------
+  
+  procedure send_bonus_dept
+  (
+    for_each_one NUMBER,
+    dept_id NUMBER
+  )
+  as
+  begin
+    merge into BONUS x
+    using 
+      (
+        select employee_id, (select for_each_one from DUAL) as money
+        from employees
+        where department_id = dept_id
+      ) y
+    on (x.employee_id = y.employee_id)
+    when matched then
+      update set x.money = x.money + for_each_one
+    when not matched then
+      insert (x.employee_id, x.money)
+      values (y.employee_id, y.money);
+  end send_bonus_dept;
+  
+  procedure send_bonus_emp
+  (
+    for_each_one NUMBER,
+    emp_id NUMBER
+  )
+  as
+  begin
+    merge into BONUS b
+    using (
+              select employee_id, (select for_each_one from DUAL) as money
+              from employees
+              where employee_id = emp_id
+          ) e
+    on (b.employee_id = e.employee_id)
+    when matched then
+      update set b.money = b.money + e.money
+    when not matched then
+      insert (b.employee_id, b.money)
+      values (e.employee_id, e.money);
+  end send_bonus_emp;
+  
+  procedure send_bonus_emps
+  (
+    for_each_one IN NUMBER,
+    emp_ids IN EMP_ID_ARRAY_T
+  )
+  as
+  begin
+    for i in 1..emp_ids.count
+    loop
+      Send_Bonus_Emp(for_each_one, emp_ids(i));
+    end loop;
+  end send_bonus_emps;
+  
+  procedure send_bonus_ref
+  (
+    for_each_one IN NUMBER,
+    emp_cursor IN SYS_REFCURSOR
+  )
+  as
+    emp_row EMP_ID_ARRAY_T;
+  begin
+      fetch emp_cursor bulk collect into emp_row;
+      Send_Bonus_Emps(for_each_one, emp_row);
+  end send_bonus_ref;
+  
+  ---------------------------------------------------------
+  
+  function get_emp_info_func
+  return sys_refcursor 
+  is
+    -- declare the cursor variable
+    -- sys_refcursor is a built in type
+    l_cursor sys_refcursor;
+  begin
+    open l_cursor for
+    select   employee_id,
+             last_name,
+             first_name,
+             to_char(hire_date, 'DD-MON-YYYY') hire_date
+    from     employees
+    where    last_name like 'A%'
+    order by last_name,
+             first_name;
+
+    return l_cursor;
+  end;
+
+  procedure get_emp_info_proc
+  (
+    p_rc out sys_refcursor
+  ) 
+  is
+  begin
+    -- open the cursor using the passed in ref cursor
+    -- sys_refcursor is a built in type
+    open p_rc for
+    select   employee_id,
+             last_name,
+             first_name,
+             to_char(hire_date, 'DD-MON-YYYY') hire_date
+    from     employees
+    where    last_name like 'A%'
+    order by last_name,
+             first_name;
+  end;
+
+  procedure get_multiple_cursors
+  (
+    p_rc1 out sys_refcursor, 
+    p_rc2 out sys_refcursor, 
+    p_rc3 out sys_refcursor
+  ) 
+  is
+  begin
+    -- open the cursors using the passed in ref cursor parameters
+    -- sys_refcursor is a built in type
+    open p_rc1 for
+    select   employee_id,
+             last_name,
+             first_name,
+             to_char(hire_date, 'DD-MON-YYYY') hire_date
+    from     employees
+    where    last_name like 'A%'
+    order by last_name,
+             first_name;
+
+    open p_rc2 for
+    select   employee_id,
+             last_name,
+             first_name,
+             to_char(hire_date, 'DD-MON-YYYY') hire_date
+    from     employees
+    where    last_name like 'B%'
+    order by last_name,
+             first_name;
+
+    open p_rc3 for
+    select   employee_id,
+             last_name,
+             first_name,
+             to_char(hire_date, 'DD-MON-YYYY') hire_date
+    from     employees
+    where    last_name like 'C%'
+    order by last_name,
+             first_name;
+  end;
+
+END HR_PACKAGE_1;
+
+====================================================================
+
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::IO;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+
+void DisplayDataSet(DataSet ^%ds)
+{
+	for (int ids = 0; ids < ds->Tables->Count; ids++)
+	{
+		DataTable ^tb = ds->Tables[ids];
+
+		for (int irow = 0; irow < tb->Rows->Count; irow++)
+		{
+			Console::Write(irow + ": ");
+			DataRow ^row = tb->Rows[irow];
+			for (int icol = 0; icol < tb->Columns->Count; icol++)
+			{
+				Console::Write(row[icol]);
+				if (icol < tb->Columns->Count - 1)
+					Console::Write(", ");
+			}
+			DEBUG();
+		}
+		DEBUG();
+	}
+}
+
+void TestCursorFunction(OracleConnection ^%con)
+{
+	DEBUG("TestCursorFunction_________________________");
+	try
+	{
+		if (con->State != ConnectionState::Open)
+			con->Open();
+
+		OracleCommand ^cmd = gcnew OracleCommand("HR_PACKAGE_1.get_emp_info_func", con);
+		cmd->CommandType = CommandType::StoredProcedure;
+		
+		cmd->Parameters->Add("p_refcursor", OracleDbType::RefCursor, ParameterDirection::ReturnValue);
+		
+		OracleDataAdapter ^adapter = gcnew OracleDataAdapter(cmd);
+		DataSet ^ds = gcnew DataSet();
+		adapter->Fill(ds);
+
+		DisplayDataSet(ds);
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+void TestCursorProcedure(OracleConnection ^%con)
+{
+	DEBUG("TestCursorProcedure_________________________");
+	try
+	{
+		if (con->State != ConnectionState::Open)
+			con->Open();
+
+		OracleCommand ^cmd = gcnew OracleCommand("HR_PACKAGE_1.get_emp_info_proc", con);
+		cmd->CommandType = CommandType::StoredProcedure;
+		
+		cmd->Parameters->Add("p_refcursor", OracleDbType::RefCursor, ParameterDirection::Output);
+		
+		OracleDataAdapter ^adapter = gcnew OracleDataAdapter(cmd);
+		DataSet ^ds = gcnew DataSet();
+		adapter->Fill(ds);
+
+		DisplayDataSet(ds);
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+void TestMultiRefCursorOutput(OracleConnection ^%con)
+{
+	DEBUG("TestMultiRefCursorOutput_________________________");
+	try
+	{
+		if (con->State != ConnectionState::Open)
+			con->Open();
+
+		OracleCommand ^cmd = gcnew OracleCommand("HR_PACKAGE_1.get_multiple_cursors", con);
+		cmd->CommandType = CommandType::StoredProcedure;
+		
+		cmd->Parameters->Add("p_rc1", OracleDbType::RefCursor, ParameterDirection::Output);
+		cmd->Parameters->Add("p_rc2", OracleDbType::RefCursor, ParameterDirection::Output);
+		cmd->Parameters->Add("p_rc3", OracleDbType::RefCursor, ParameterDirection::Output);
+
+		OracleDataAdapter ^adapter = gcnew OracleDataAdapter(cmd);
+		DataSet ^ds = gcnew DataSet();
+		adapter->Fill(ds);
+
+		DisplayDataSet(ds);
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+int main()
+{
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=true;";
+	
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+	try
+	{
+		TestCursorFunction(con);
+		TestCursorProcedure(con);
+		TestMultiRefCursorOutput(con);
+	}
+	catch (OracleException ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+	
+	return 0;
+}
