@@ -1,0 +1,115 @@
+#include <string>
+#include <windows.h>
+
+using namespace std;
+using namespace System;
+using namespace System::IO;
+using namespace System::Data;
+using namespace System::Data::Common;
+using namespace System::Collections;
+using namespace System::Runtime::InteropServices;
+using namespace System::Windows::Forms;
+using namespace Oracle::DataAccess::Client;
+using namespace Oracle::DataAccess::Types;
+
+#define DEBUG Console::WriteLine
+#define PERFORMANCE_TEST(FuncCall) { DEBUG(#FuncCall);\
+									_start = DateTime::Now; \
+									FuncCall; \
+									_end = DateTime::Now; \
+									_seconds = _end.Subtract(_start).TotalSeconds; \
+									DEBUG(_seconds); }
+
+void DisplayDataSet(DataSet ^%ds)
+{
+	for (int ids = 0; ids < ds->Tables->Count; ids++)
+	{
+		DataTable ^tb = ds->Tables[ids];
+
+		for (int irow = 0; irow < tb->Rows->Count; irow++)
+		{
+			Console::Write(irow + ": ");
+			DataRow ^row = tb->Rows[irow];
+			for (int icol = 0; icol < tb->Columns->Count; icol++)
+			{
+				Console::Write(row[icol]);
+				if (icol < tb->Columns->Count - 1)
+					Console::Write(", ");
+			}
+			DEBUG();
+		}
+		DEBUG();
+	}
+}
+
+void DisplayDataInReader(OracleDataReader ^reader)
+{
+	int row = 0;
+	while (reader->Read())
+	{
+		Console::Write(row++ + ": ");
+		for (int i = 0; i < reader->FieldCount; i++)
+		{
+			Console::Write(reader->GetOracleValue(i)->ToString());
+			if (i < reader->FieldCount - 1)
+				Console::Write(", ");
+		}
+		DEBUG();
+	}
+	DEBUG();
+}
+
+void FetchTest(OracleConnection ^%con, int numRow)
+{
+	try
+	{
+		if (con->State != ConnectionState::Open)
+			con->Open();
+
+		OracleCommand ^cmd = gcnew OracleCommand("select * from TEST_LARGE_DATA", con);
+		
+		OracleDataReader ^reader = cmd->ExecuteReader();
+		reader->FetchSize = cmd->RowSize * numRow;
+		while (reader->Read())
+		{
+			
+		}
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
+int main()
+{
+	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=true;";
+	OracleConnection ^con = gcnew OracleConnection(gcnew String(conString.c_str()));
+
+	DateTime _start, _end;
+	double _seconds;
+	try
+	{
+		PERFORMANCE_TEST(FetchTest(con, 1));
+		PERFORMANCE_TEST(FetchTest(con, 10));
+		PERFORMANCE_TEST(FetchTest(con, 100));
+		PERFORMANCE_TEST(FetchTest(con, 1000));
+		PERFORMANCE_TEST(FetchTest(con, 10000));
+	}
+	catch (OracleException ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+	
+	return 0;
+}
