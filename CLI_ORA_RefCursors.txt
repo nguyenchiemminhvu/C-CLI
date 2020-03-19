@@ -283,6 +283,23 @@ void DisplayDataSet(DataSet ^%ds)
 	}
 }
 
+void DisplayDataInReader(OracleDataReader ^reader)
+{
+	int row = 0;
+	while (reader->Read())
+	{
+		Console::Write(row++ + ": ");
+		for (int i = 0; i < reader->FieldCount; i++)
+		{
+			Console::Write(reader->GetOracleValue(i)->ToString());
+			if (i < reader->FieldCount - 1)
+				Console::Write(", ");
+		}
+		DEBUG();
+	}
+	DEBUG();
+}
+
 void TestCursorFunction(OracleConnection ^%con)
 {
 	DEBUG("TestCursorFunction_________________________");
@@ -375,6 +392,38 @@ void TestMultiRefCursorOutput(OracleConnection ^%con)
 	}
 }
 
+void TestMultiRefCursorOutput2(OracleConnection ^%con)
+{
+	DEBUG("TestMultiRefCursorOutput2_________________________");
+	try
+	{
+		if (con->State != ConnectionState::Open)
+			con->Open();
+
+		OracleCommand ^cmd = gcnew OracleCommand("HR_PACKAGE_1.get_multiple_cursors", con);
+		cmd->CommandType = CommandType::StoredProcedure;
+		
+		cmd->Parameters->Add("p_rc1", OracleDbType::RefCursor, ParameterDirection::Output);
+		cmd->Parameters->Add("p_rc2", OracleDbType::RefCursor, ParameterDirection::Output);
+		cmd->Parameters->Add("p_rc3", OracleDbType::RefCursor, ParameterDirection::Output);
+
+		cmd->ExecuteNonQuery();
+
+		DisplayDataInReader(((OracleRefCursor ^)cmd->Parameters["p_rc1"]->Value)->GetDataReader());
+		DisplayDataInReader(((OracleRefCursor ^)cmd->Parameters["p_rc2"]->Value)->GetDataReader());
+		DisplayDataInReader(((OracleRefCursor ^)cmd->Parameters["p_rc3"]->Value)->GetDataReader());
+	}
+	catch (Exception ^e)
+	{
+		MessageBox::Show(e->Message->ToString());
+	}
+	finally
+	{
+		if (con->State != ConnectionState::Closed)
+			con->Close();
+	}
+}
+
 int main()
 {
 	std::string conString = "User Id=HR; password=HR;Data Source=localhost:1521/SAMPLEDB; Pooling=true;";
@@ -385,6 +434,7 @@ int main()
 		TestCursorFunction(con);
 		TestCursorProcedure(con);
 		TestMultiRefCursorOutput(con);
+		TestMultiRefCursorOutput2(con);
 	}
 	catch (OracleException ^e)
 	{
