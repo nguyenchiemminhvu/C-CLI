@@ -1,0 +1,87 @@
+#include <oracl.h>
+#include <obound.h>
+
+#include <string>
+#include <iostream>
+
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
+class Employee
+{
+public:
+	Employee()
+	{
+		db.Open("localhost:1521/NONCONDB", "HR", "HR");
+	}
+
+	~Employee()
+	{
+		db.Close();
+	}
+
+	void Query(int ID)
+	{
+		String ^s = "select EMPLOYEE_ID, LAST_NAME, SALARY from EMPLOYEES where EMPLOYEE_ID = " + ID;
+		IntPtr sPtr = Marshal::StringToHGlobalAnsi(s);
+		char *cs = (char *)sPtr.ToPointer();
+		
+		if (records.IsOpen())
+			records.Close();
+		records.Open(db, cs);
+
+		char name[25];
+		double salary;
+		if (!records.IsEOF())
+		{
+			records.MoveFirst();
+			records.GetFieldValue("EMPLOYEE_ID", &ID);
+			records.GetFieldValue("LAST_NAME", name, 25);
+			records.GetFieldValue("SALARY", &salary);
+			std::cout << ID << " " << name << " " << salary << std::endl;
+		}
+
+		Marshal::FreeHGlobal(sPtr);
+		records.Close();
+	}
+
+	void SetSalary(int ID, int newSalary)
+	{
+		if (!records.IsOpen())
+		{
+			String ^s = "select EMPLOYEE_ID, LAST_NAME, SALARY from EMPLOYEES where EMPLOYEE_ID = " + ID;
+			IntPtr sPtr = Marshal::StringToHGlobalAnsi(s);
+			char *cs = (char *)sPtr.ToPointer();
+
+			records.Open(db, cs);
+		}
+		
+		if (!records.IsEOF())
+		{
+			records.MoveFirst();
+			records.StartEdit();
+			records.SetFieldValue("SALARY", newSalary);
+			records.Update();
+		}
+
+		records.Close();
+	}
+
+private:
+
+	ODatabase db;
+	ODynaset records;
+};
+
+int main()
+{
+	OStartup();
+
+	Employee emp;
+	emp.Query(100);
+	emp.SetSalary(100, 99999);
+	emp.Query(100);
+	
+	OShutdown();
+	return 0;
+}
