@@ -60,7 +60,7 @@ public:
 		{
 			records.MoveFirst();
 			records.StartEdit();
-			records.SetFieldValue("SALARY", newSalary);
+			records.GetField("SALARY").SetValue(newSalary);
 			records.Update();
 		}
 
