@@ -12,24 +12,8 @@ struct EmpInfo
 	std::string job_id;
 };
 
-int main()
+bool AddEmployee(ODynaset &empSet, EmpInfo newEmp)
 {
-	OStartup();
-	
-	ODatabase db("NONCONDB", "HR", "HR");
-	if (!db.IsOpen())
-	{
-		std::cout << db.ErrorNumber() << std::endl;
-		return -1;
-	}
-
-	EmpInfo newEmp;
-	newEmp.first_name = "Nguyen";
-	newEmp.last_name = "Vu";
-	newEmp.email = "nguyenchiemminhvu";
-	newEmp.job_id = "IT_PROG";
-
-	ODynaset empSet(db, "select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, JOB_ID, HIRE_DATE from EMPLOYEES");
 	if (!empSet.IsOpen())
 		return -1;
 	
@@ -50,6 +34,28 @@ int main()
 	empSet.SetFieldValue("EMAIL", newEmp.email.c_str());
 	empSet.SetFieldValue("JOB_ID", newEmp.job_id.c_str());
 	empSet.SetFieldValue("HIRE_DATE", hire_date);
+}
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db("NONCONDB", "HR", "HR");
+	if (!db.IsOpen())
+	{
+		std::cout << db.ErrorNumber() << std::endl;
+		return -1;
+	}
+
+	EmpInfo newEmp;
+	newEmp.first_name = "Nguyen";
+	newEmp.last_name = "Vu";
+	newEmp.email = "nguyenchiemminhvu";
+	newEmp.job_id = "IT_PROG";
+
+	ODynaset empSet(db, "select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, JOB_ID, HIRE_DATE from EMPLOYEES");
+	
+	AddEmployee(empSet, newEmp);
 
 	if (empSet.Update() != OSUCCESS)
 	{
