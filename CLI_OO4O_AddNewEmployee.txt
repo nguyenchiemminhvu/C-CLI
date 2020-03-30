@@ -1,0 +1,62 @@
+#include <string>
+#include <iostream>
+
+#include <oracl.h>
+#include <obound.h>
+
+struct EmpInfo
+{
+	std::string first_name;
+	std::string last_name;
+	std::string email;
+	std::string job_id;
+};
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db("NONCONDB", "HR", "HR");
+	if (!db.IsOpen())
+	{
+		std::cout << db.ErrorNumber() << std::endl;
+		return -1;
+	}
+
+	EmpInfo newEmp;
+	newEmp.first_name = "Nguyen";
+	newEmp.last_name = "Vu";
+	newEmp.email = "nguyenchiemminhvu";
+	newEmp.job_id = "IT_PROG";
+
+	ODynaset empSet(db, "select EMPLOYEE_ID, FIRST_NAME, LAST_NAME, EMAIL, JOB_ID, HIRE_DATE from EMPLOYEES");
+	if (!empSet.IsOpen())
+		return -1;
+	
+	if (empSet.AddNewRecord() != OSUCCESS)
+		return -1;
+
+	int employee_id;
+	ODynaset empID(empSet.GetDatabase(), "select employees_seq.nextval as nextID from DUAL");
+	empID.GetField("nextID").GetValue(&employee_id);
+	
+	OValue hire_date;
+	ODynaset curDay(empSet.GetDatabase(), "select SYSDATE as curDay from DUAL");
+	curDay.GetField("curDay").GetValue(&hire_date);
+
+	empSet.SetFieldValue("EMPLOYEE_ID", employee_id);
+	empSet.SetFieldValue("FIRST_NAME", newEmp.first_name.c_str());
+	empSet.SetFieldValue("LAST_NAME", newEmp.last_name.c_str());
+	empSet.SetFieldValue("EMAIL", newEmp.email.c_str());
+	empSet.SetFieldValue("JOB_ID", newEmp.job_id.c_str());
+	empSet.SetFieldValue("HIRE_DATE", hire_date);
+
+	if (empSet.Update() != OSUCCESS)
+	{
+		std::cout << db.GetServerErrorText() << std::endl;
+		return -1;
+	}
+
+	OShutdown();
+	return 0;
+}

@@ -1,0 +1,22 @@
+#include <string>
+#include <iostream>
+
+#include <oracl.h>
+#include <obound.h>
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db("NONCONDB", "HR", "HR");
+	ODynaset ds(db, "select * from BONUS");
+
+	while (!ds.IsEOF())
+	{
+		ds.DeleteRecord();
+		ds.MoveNext();
+	}
+
+	OShutdown();
+	return 0;
+}

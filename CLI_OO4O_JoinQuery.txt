@@ -1,0 +1,39 @@
+#include <oracl.h>
+#include <obound.h>
+
+#include <string>
+#include <iostream>
+
+using namespace System;
+using namespace System::Runtime::InteropServices;
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db("localhost:1521/NONCONDB", "HR", "HR");
+	if (!db.IsOpen())
+	{
+		std::cout << db.GetErrorText() << " " << db.GetServerErrorText() << std::endl;
+		return -1;
+	}
+
+	ODynaset ds(db, "select D.Department_Name as DEPT_NAME, count(employee_id) as NUM_EMP \
+					 from Employees E \
+					 inner join Departments D \
+					 on E.Department_Id = D.Department_Id \
+					 group by D.Department_Name");
+
+	while (!ds.IsEOF())
+	{
+		OValue dept_name, num_emp;
+		ds.GetField("DEPT_NAME").GetValue(&dept_name);
+		ds.GetField("NUM_EMP").GetValue(&num_emp);
+		std::cout << dept_name.operator const char *() << ": " << num_emp.operator int() << std::endl;
+
+		ds.MoveNext();
+	}
+
+	OShutdown();
+	return 0;
+}
