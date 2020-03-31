@@ -1,0 +1,31 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+int getHighestSalary()
+{
+	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	
+	ODynaset sal(db, "select HR_PACKAGE_1.Gethighestsalary() as HS from DUAL");
+	OValue hs;
+	sal.GetField("HS").GetValue(&hs);
+
+	return (int)hs;
+}
+
+int main()
+{
+	OStartup();
+	
+	std::cout << getHighestSalary() << std::endl;
+	
+	OShutdown();
+	return 0;
+}

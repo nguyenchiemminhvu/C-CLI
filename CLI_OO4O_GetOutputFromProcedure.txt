@@ -1,0 +1,40 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+int getHighestSalary()
+{
+	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	db.GetParameters().Add("output", 0, OPARAMETER_OUTVAR, OTYPE_NUMBER);
+	
+	oresult sqlRes = db.ExecuteSQL("begin HR_PACKAGE_1.gethighestsalary(:output); end;");
+	if (sqlRes != OSUCCESS)
+	{
+		std::cout << db.GetErrorText() << " " << db.GetServerErrorText() << std::endl;
+		return -1;
+	}
+	
+	OParameter outParam = db.GetParameters().GetParameter("output");
+	int hs;
+	outParam.GetValue(&hs);
+
+	db.GetParameters().Remove("output");
+	return hs;
+}
+
+int main()
+{
+	OStartup();
+	
+	std::cout << getHighestSalary() << std::endl;
+	
+	OShutdown();
+	return 0;
+}

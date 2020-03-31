@@ -1,0 +1,46 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+void PrintEmpInDept(int dept)
+{
+	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+
+	OParameterCollection params = db.GetParameters();
+	params.Add("dept", dept, OPARAMETER_INVAR, OTYPE_NUMBER);
+
+	ODynaset emps(db, "select * from employees where department_id = :dept");
+	OField emp_id = emps.GetField("EMPLOYEE_ID");
+	OField last_name = emps.GetField("LAST_NAME");
+	OField salary = emps.GetField("SALARY");
+
+	while (!emps.IsEOF())
+	{
+		OValue id, name, sal;
+		emp_id.GetValue(&id);
+		last_name.GetValue(&name);
+		salary.GetValue(&sal);
+		std::cout << (int)id << " " << (const char *)name << " " << (int)sal << std::endl;
+
+		emps.MoveNext();
+	}
+
+	params.Remove("dept");
+}
+
+int main()
+{
+	OStartup();
+	
+	PrintEmpInDept(60);
+	
+	OShutdown();
+	return 0;
+}

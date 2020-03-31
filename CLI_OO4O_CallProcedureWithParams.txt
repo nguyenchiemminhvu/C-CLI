@@ -1,0 +1,41 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+void sendBonusForDept(int amount, int dept)
+{
+	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	db.GetSession().BeginTransaction();
+
+	db.GetParameters().Add("amount", amount, OPARAMETER_INVAR, OTYPE_NUMBER);
+	db.GetParameters().Add("dept", dept, OPARAMETER_INVAR, OTYPE_NUMBER);
+
+	oresult res = db.ExecuteSQL("begin HR_PACKAGE_1.send_bonus_dept(:amount, :dept); end;");
+	if (res != OSUCCESS)
+	{
+		db.GetSession().Rollback();
+		return;
+	}
+	
+	db.GetSession().Commit();
+
+	db.GetParameters().Remove("amount");
+	db.GetParameters().Remove("dept");
+}
+
+int main()
+{
+	OStartup();
+	
+	sendBonusForDept(100, 60);
+	
+	OShutdown();
+	return 0;
+}

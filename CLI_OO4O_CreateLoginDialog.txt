@@ -28,6 +28,18 @@ namespace OO4O_Test
 	public ref class DBDialog : public System::Windows::Forms::Form
 	{
 	public:
+		static ODatabase LoginNewSession()
+		{
+			OSession newSession;
+			newSession.Open();
+
+			DBDialog ^diag = gcnew DBDialog();
+			diag->ShowDialog(nullptr);
+			ODatabase db = diag->GetDatabase();
+			return db;
+		}
+
+	public:
 		ODatabase *_db;
 		ODatabase GetDatabase()
 		{

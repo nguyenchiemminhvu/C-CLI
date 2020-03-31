@@ -1,0 +1,75 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db1 = OO4O_Test::DBDialog::LoginNewSession();
+	ODatabase db2 = OO4O_Test::DBDialog::LoginNewSession();
+	
+	if (!db1.IsOpen())
+	{
+		std::cout << db1.ServerErrorNumber() << std::endl;
+		return -1;
+	}
+	
+	if (!db2.IsOpen())
+	{
+		std::cout << db2.ServerErrorNumber() << std::endl;
+		return -1;
+	}
+
+	db1.GetSession().BeginTransaction();
+	oresult db1Res = db1.ExecuteSQL("begin HR_PACKAGE_1.send_bonus_dept(1, 60); end;");
+	if (db1Res != OSUCCESS)
+	{
+		std::cout << "Failed to send bonus" << std::endl;
+		db1.GetSession().Rollback();
+		return -1;
+	}
+	else
+	{
+		db2.GetSession().BeginTransaction();
+		ODynaset sal(db2, " select E.employee_id as employee_id, last_name, salary, salary + nvl(money, 0) as real_salary \
+							from employees E \
+							left join bonus B \
+							on E.employee_id = B.employee_id \
+							order by E.employee_id");
+		
+		OField employee_id = sal.GetField("EMPLOYEE_ID");
+		OField last_name = sal.GetField("LAST_NAME");
+		OField salary = sal.GetField("SALARY");
+		OField real_salary = sal.GetField("REAL_SALARY");
+		while (!sal.IsEOF())
+		{
+			int _id, _salary, _real;
+			OValue _last_name;
+
+			employee_id.GetValue(&_id);
+			last_name.GetValue(&_last_name);
+			salary.GetValue(&_salary);
+			real_salary.GetValue(&_real);
+			
+			std::cout << _id << " " << _last_name.operator const char *() << " " << _salary << " " << _real << std::endl;
+
+			sal.MoveNext();
+		}
+		db2.GetSession().Commit();
+	}
+
+	db1.GetSession().Commit();
+	
+	OShutdown();
+	return 0;
+}
