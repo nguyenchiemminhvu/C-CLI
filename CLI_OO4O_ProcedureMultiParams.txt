@@ -9,11 +9,11 @@
 
 #include "DBDialog.h"
 
-void sendBonusToEmps(int amount, int emp)
+void sendBonusToEmp(int amount, int emp)
 {
 	try
 	{
-		ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+		ODatabase db = OO4O_Test::DBDialog::Login();
 		db.GetSession().BeginTransaction();
 
 		db.GetParameters().Add("amount", amount, OPARAMETER_INVAR, OTYPE_NUMBER);
@@ -38,7 +38,7 @@ int main()
 {
 	OStartup();
 	
-	sendBonusToEmps(10, 100);
+	sendBonusToEmp(10, 100);
 	
 	OShutdown();
 	return 0;

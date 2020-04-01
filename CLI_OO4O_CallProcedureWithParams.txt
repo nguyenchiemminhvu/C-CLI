@@ -11,7 +11,7 @@
 
 void sendBonusForDept(int amount, int dept)
 {
-	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	ODatabase db = OO4O_Test::DBDialog::Login();
 	db.GetSession().BeginTransaction();
 
 	db.GetParameters().Add("amount", amount, OPARAMETER_INVAR, OTYPE_NUMBER);

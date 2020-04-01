@@ -1,0 +1,118 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+void GetCursorAsOutput(ODatabase &db)
+{
+	ORef emp_cur;
+	OParameter ref_emp_cur = db.GetParameters().Add("emp_cur", emp_cur, OPARAMETER_OUTVAR, OTYPE_CURSOR);
+
+	oresult res = db.ExecuteSQL("begin HR_PACKAGE_1.openEmpCursor(:emp_cur); end;");
+	if (res != OSUCCESS)
+	{
+		std::cout << db.GetErrorText() << " " << db.GetServerErrorText() << std::endl;
+	}
+
+	ODynaset emps;
+	ref_emp_cur.GetValue(&emps);
+
+	OField fID = emps.GetField("EMPLOYEE_ID");
+	OField fName = emps.GetField("LAST_NAME");
+	OField fSalary = emps.GetField("SALARY");
+	while (!emps.IsEOF())
+	{
+		OValue id, name, sal;
+		fID.GetValue(&id);
+		fName.GetValue(&name);
+		fSalary.GetValue(&sal);
+		std::cout << (int)id << " " << (const char *)name << " " << (int)sal << std::endl;
+
+		emps.MoveNext();
+	}
+
+	db.GetParameters().Remove("emp_cur");
+}
+
+void GetMultiCursorAsOutput(ODatabase &db)
+{
+	ORef c1, c2, c3;
+	OParameter param1 = db.GetParameters().Add("c1", c1, OPARAMETER_OUTVAR, OTYPE_CURSOR);
+	OParameter param2 = db.GetParameters().Add("c2", c2, OPARAMETER_OUTVAR, OTYPE_CURSOR);
+	OParameter param3 = db.GetParameters().Add("c3", c3, OPARAMETER_OUTVAR, OTYPE_CURSOR);
+
+	oresult res = db.ExecuteSQL("begin HR_PACKAGE_1.openMultiCursors(:c1, :c2, :c3); end;");
+	if (res != OSUCCESS)
+	{
+		std::cout << db.GetErrorText() << " " << db.GetServerErrorText() << std::endl;
+	}
+
+	ODynaset s1, s2, s3;
+	param1.GetValue(&s1);
+	param2.GetValue(&s2);
+	param3.GetValue(&s3);
+
+	std::cout << "================================================" << std::endl;
+	OField f1_ID = s1.GetField("EMPLOYEE_ID");
+	OField f1_Name = s1.GetField("LAST_NAME");
+	OField f1_Salary = s1.GetField("SALARY");
+	while (!s1.IsEOF())
+	{
+		OValue id, name, sal;
+		f1_ID.GetValue(&id);
+		f1_Name.GetValue(&name);
+		f1_Salary.GetValue(&sal);
+		std::cout << (int)id << " " << (const char *)name << " " << (int)sal << std::endl;
+
+		s1.MoveNext();
+	}
+
+	std::cout << "================================================" << std::endl;
+	OField f2_ID = s2.GetField("EMPLOYEE_ID");
+	OField f2_Name = s2.GetField("LAST_NAME");
+	OField f2_Salary = s2.GetField("SALARY");
+	while (!s2.IsEOF())
+	{
+		OValue id, name, sal;
+		f2_ID.GetValue(&id);
+		f2_Name.GetValue(&name);
+		f2_Salary.GetValue(&sal);
+		std::cout << (int)id << " " << (const char *)name << " " << (int)sal << std::endl;
+		
+		s2.MoveNext();
+	}
+
+	std::cout << "================================================" << std::endl;
+	OField f3_ID = s3.GetField("EMPLOYEE_ID");
+	OField f3_Name = s3.GetField("LAST_NAME");
+	OField f3_Salary = s3.GetField("SALARY");
+	while (!s3.IsEOF())
+	{
+		OValue id, name, sal;
+		f3_ID.GetValue(&id);
+		f3_Name.GetValue(&name);
+		f3_Salary.GetValue(&sal);
+		std::cout << (int)id << " " << (const char *)name << " " << (int)sal << std::endl;
+		
+		s3.MoveNext();
+	}
+}
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db = OO4O_Test::DBDialog::Login();
+
+	GetCursorAsOutput(db);
+	GetMultiCursorAsOutput(db);
+	
+	OShutdown();
+	return 0;
+}

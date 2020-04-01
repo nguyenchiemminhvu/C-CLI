@@ -11,7 +11,7 @@
 
 int getHighestSalary()
 {
-	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	ODatabase db = OO4O_Test::DBDialog::Login();
 	
 	ODynaset sal(db, "select HR_PACKAGE_1.Gethighestsalary() as HS from DUAL");
 	OValue hs;

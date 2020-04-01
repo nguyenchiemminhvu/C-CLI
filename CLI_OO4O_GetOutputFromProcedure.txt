@@ -11,7 +11,7 @@
 
 int getHighestSalary()
 {
-	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	ODatabase db = OO4O_Test::DBDialog::Login();
 	db.GetParameters().Add("output", 0, OPARAMETER_OUTVAR, OTYPE_NUMBER);
 	
 	oresult sqlRes = db.ExecuteSQL("begin HR_PACKAGE_1.gethighestsalary(:output); end;");

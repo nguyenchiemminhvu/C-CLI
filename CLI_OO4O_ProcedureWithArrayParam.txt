@@ -11,7 +11,7 @@
 
 void sendBonusEMPs(int amount, int *emps, int n)
 {
-	ODatabase db = OO4O_Test::DBDialog::LoginNewSession();
+	ODatabase db = OO4O_Test::DBDialog::Login();
 	
 	db.GetParameters().Add("amount", amount, OPARAMETER_INVAR, OTYPE_NUMBER);
 	OParamArray arr = db.GetParameters().AddTable("emps", OPARAMETER_INVAR, OTYPE_NUMBER, n);
