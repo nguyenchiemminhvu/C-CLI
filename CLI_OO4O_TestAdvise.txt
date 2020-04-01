@@ -1,0 +1,65 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+class MyAdvise : public OAdvise
+{
+public:
+	MyAdvise()
+		: OAdvise()
+	{
+	}
+
+	MyAdvise(ODynaset &dyn)
+		: OAdvise(dyn)
+	{
+	}
+
+	virtual void ActionNotify(int type)
+	{
+		if (type == OADVISE_MOVE_NEXT)
+		{
+			std::cout << "Move next" << std::endl;
+		}
+	}
+
+	virtual void StatusChange(int status)
+	{
+		if (status == OADVISE_FOUNDLAST)
+		{
+			std::cout << "End..." << std::endl;
+		}
+	}
+};
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db = OO4O_Test::DBDialog::Login();
+
+	try
+	{
+		ODynaset s(db, "select * from employees");
+		MyAdvise ad(s);
+		
+		while (!s.IsEOF())
+		{
+			s.MoveNext();
+		}
+	}
+	catch (OException e)
+	{
+		std::cout << e.GetErrorNumber() << " " << e.GetErrorText() << std::endl;
+	}
+	
+	OShutdown();
+	return 0;
+}
