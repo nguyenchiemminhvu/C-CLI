@@ -1,0 +1,52 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db = OO4O_Test::DBDialog::Login();
+
+	try
+	{
+		ODynaset images(db, "select * from IMAGES");
+		OField image_name = images.GetField("IMAGE_NAME");
+		OField image_data = images.GetField("IMAGE_DATA");
+		while (!images.IsEOF())
+		{
+			OValue name, data;
+			image_name.GetValue(&name);
+			image_data.GetValue(&data);
+
+			std::string file_name = ".\\DOWNLOADS\\"; file_name += (const char *)name;
+			OBlob bo = (OBlob)data;
+
+			//bo.CopyToFile(file_name.c_str(), bo.GetSize(), bo.GetOptimumChunkSize());
+			
+			unsigned char * buffer = (unsigned char *)malloc(bo.GetSize());
+			bo.Read(buffer, bo.GetSize());
+
+			std::ofstream fs(file_name.c_str(), std::ios::binary);
+			fs.write((char*)&buffer[0], bo.GetSize());
+			free(buffer);
+
+			images.MoveNext();
+		}
+	}
+	catch (OException e)
+	{
+		std::cout << e.GetErrorNumber() << " " << e.GetErrorText() << std::endl;
+	}
+	
+	OShutdown();
+	return 0;
+}

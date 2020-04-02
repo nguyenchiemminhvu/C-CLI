@@ -1,0 +1,56 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db = OO4O_Test::DBDialog::Login();
+
+	try
+	{
+		OBlob bo(db);
+		
+		std::ifstream fs(".\\IMAGES\\Pic_1.png", std::ios::binary);
+		
+		fs.seekg(0, std::ios::end);
+		unsigned long fileSize = fs.tellg();
+		unsigned char *buffer = (unsigned char *)malloc(fileSize);
+		fs.seekg(0, std::ios::beg);
+
+		bo.EnableStreaming(fileSize);
+		fs.read((char*)&buffer[0], fileSize);
+		bo.Write(buffer, fileSize);
+		bo.DisableStreaming();
+
+		free(buffer);
+		fs.close();
+		
+		db.GetParameters().Add("name", "Pic_1.png", OPARAMETER_INVAR, OTYPE_VARCHAR2);
+		db.GetParameters().Add("data", bo, OPARAMETER_INVAR, OTYPE_BLOB);
+		oresult res = db.ExecuteSQL("insert into IMAGES values(:name, :data)");
+		if (res != OSUCCESS)
+		{
+			std::cout << db.GetErrorText() << " " << db.GetServerErrorText() << std::endl;
+		}
+
+		db.GetParameters().Remove("name");
+		db.GetParameters().Remove("data");
+	}
+	catch (OException e)
+	{
+		std::cout << e.GetErrorNumber() << " " << e.GetErrorText() << std::endl;
+	}
+	
+	OShutdown();
+	return 0;
+}
