@@ -1,0 +1,92 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+void DownloadImages(ODatabase &db)
+{
+	ODynaset images(db, "select * from IMAGES");
+	OField image_name = images.GetField("IMAGE_NAME");
+	OField image_data = images.GetField("IMAGE_DATA");
+	while (!images.IsEOF())
+	{
+		OValue name, data;
+		image_name.GetValue(&name);
+		image_data.GetValue(&data);
+
+		std::string file_name = ".\\DOWNLOADS\\"; file_name += (const char *)name;
+		OBlob bo = (OBlob)data;
+
+		//bo.CopyToFile(file_name.c_str(), bo.GetSize(), bo.GetOptimumChunkSize());
+		
+		unsigned char * buffer = (unsigned char *)malloc(bo.GetSize());
+		bo.EnableStreaming(bo.GetSize());
+		bo.Read(buffer, bo.GetSize());
+		bo.DisableStreaming();
+
+		std::ofstream fs(file_name.c_str(), std::ios::binary);
+		fs.write((char*)&buffer[0], bo.GetSize());
+		free(buffer);
+
+		images.MoveNext();
+	}
+}
+
+void UploadImage(ODatabase &db, const char *file_name)
+{
+	OBlob bo(db);
+	
+	std::string fullPath = ".\\IMAGES\\"; fullPath += file_name;
+	std::ifstream fs(fullPath.c_str(), std::ios::binary);
+	
+	fs.seekg(0, std::ios::end);
+	unsigned long fileSize = fs.tellg();
+	unsigned char *buffer = (unsigned char *)malloc(fileSize);
+	fs.seekg(0, std::ios::beg);
+
+	bo.EnableStreaming(fileSize);
+	fs.read((char*)&buffer[0], fileSize);
+	bo.Write(buffer, fileSize);
+	bo.DisableStreaming();
+
+	free(buffer);
+	fs.close();
+	
+	db.GetParameters().Add("name", file_name, OPARAMETER_INVAR, OTYPE_VARCHAR2);
+	db.GetParameters().Add("data", bo, OPARAMETER_INVAR, OTYPE_BLOB);
+	oresult res = db.ExecuteSQL("insert into IMAGES values(:name, :data)");
+	if (res != OSUCCESS)
+	{
+		std::cout << db.GetErrorText() << " " << db.GetServerErrorText() << std::endl;
+	}
+
+	db.GetParameters().Remove("name");
+	db.GetParameters().Remove("data");
+}
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db = OO4O_Test::DBDialog::Login();
+
+	try
+	{
+		UploadImage(db, "Pic_1.png");
+		DownloadImages(db);
+	}
+	catch (OException e)
+	{
+		std::cout << e.GetErrorNumber() << " " << e.GetErrorText() << std::endl;
+	}
+	
+	OShutdown();
+	return 0;
+}
