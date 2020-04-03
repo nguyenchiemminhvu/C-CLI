@@ -1,0 +1,102 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+#include <process.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+unsigned int WINAPI callback(void *args)
+{
+	std::cout << "In thread ... " << GetCurrentThreadId() << std::endl;
+
+	OStartup(OSTARTUP_MULTITHREADED);
+	OSession *ses = (OSession*)args;
+	ODatabase db = ses->GetDatabaseFromPool(10);
+	if (!db.IsOpen())
+	{
+		std::cout << "Can not open DB from session's pool" << std::endl;
+		db.Close();
+		exit(-1);
+	}
+
+	ODynaset ds(db, "select * from EMPLOYEES");
+	ds.Close();
+	_sleep(3000);
+
+	db.Close();
+	OShutdown();
+	std::cout << "Out thread ... " << GetCurrentThreadId() << std::endl;
+
+	return 0;
+}
+
+HANDLE pThreads[10000];
+DWORD idThreads[10000];
+
+int nThreads = 100;
+
+int main()
+{
+	OStartup(OSTARTUP_MULTITHREADED);
+	OSession ses;
+	ses.Open();
+	if (!ses.IsOpen())
+	{
+		std::cout << ses.GetErrorText() << " " << ses.GetServerErrorText() << std::endl;
+		ses.Close();
+		OShutdown();
+		exit(-1);
+	}
+	ses.CreateDatabasePool(nThreads, nThreads, 0, "NONCONDB", "HR", "HR");
+	
+	for (int i = 0; i < nThreads; i++)
+	{
+		pThreads[i] = (HANDLE) _beginthreadex(NULL, 0, callback, (void*)&ses, 0, (unsigned int *)&idThreads[i]);
+	}
+
+	for (int i = 0; i < nThreads; i++)
+	{
+		DWORD res = WaitForSingleObject(pThreads[i], INFINITE);
+
+		std::cout << i << " ";
+		switch (res)
+		{
+		case WAIT_TIMEOUT:
+			std::cout << "WAIT_TIMEOUT" << std::endl;
+			break;
+		case WAIT_OBJECT_0:
+			std::cout << "WAIT_OBJECT_0" << std::endl;
+			break;
+		case WAIT_ABANDONED_0:
+			std::cout << "WAIT_ABANDONED_0" << std::endl;
+			break;
+		case WAIT_FAILED:
+			std::cout << "WAIT_FAILED" << std::endl;
+			break;
+		default:
+			void *buffer;
+			FormatMessage(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+				NULL,
+				GetLastError(),
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPTSTR)&buffer,
+				0,
+				NULL
+			);
+			std::cout << "DEFAULT ___ " << (WCHAR*)buffer << std::endl;
+			break;
+		}
+	}
+	
+	ses.DestroyDatabasePool();
+	ses.Close();
+	OShutdown();
+	return 0;
+}
