@@ -1,0 +1,40 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+#include <tchar.h>
+
+#include <oracl.h>
+#include <obound.h>
+
+#include "DBDialog.h"
+
+int main()
+{
+	OStartup();
+	
+	ODatabase db = OO4O_Test::DBDialog::Login();
+
+	try
+	{
+		OBinder binder;
+		binder.Open(db, "select * from BONUS order by EMPLOYEE_ID");
+		if (!binder.IsOpen())
+		{
+			std::cout << "Binder is not open" << std::endl;
+			return -1;
+		}
+		binder.AddNewRecord();
+		binder.SetFieldValue(binder.GetFieldIndex("EMPLOYEE_ID"), 200);
+		binder.SetFieldValue(binder.GetFieldIndex("MONEY"), 1000);
+		binder.Update();
+	}
+	catch (OException e)
+	{
+		std::cout << e.GetErrorNumber() << " " << e.GetErrorText() << std::endl;
+	}
+	
+	OShutdown();
+	return 0;
+}
