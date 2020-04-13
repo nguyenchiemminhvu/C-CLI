@@ -1,0 +1,9 @@
+DWORD att = GetFileAttributes(L".\\DOWNLOADS");
+if (!(att != INVALID_FILE_ATTRIBUTES && (att & FILE_ATTRIBUTE_DIRECTORY)))
+{
+	if (!CreateDirectory(L".\\DOWNLOADS", NULL))
+	{
+		AfxMessageBox(L"Can not create folders");
+		return FALSE;
+	}
+}
